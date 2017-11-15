@@ -23,6 +23,8 @@ set(LOGILCDSTUDIO_HEADERS
 	DataFunctions.h
 	LCDThreads.h
 	mono_background.h
+	resource.h
+	CGdiPlusBitmap.h
 	#"${LCDSDK_PATH}/Include/LogitechLCDLib.h"
 	)
 
@@ -32,6 +34,7 @@ set(LOGILCDSTUDIO_SOURCES
 	DataFunctions.cpp
 	DualThread.cpp
 	MonoThread.cpp
+	Resource.rc
 	)
 
 add_library(LogiLCDStudio MODULE
