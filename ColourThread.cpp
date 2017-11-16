@@ -93,6 +93,12 @@ void Colour(std::atomic<bool>& close)
 	// Initialize GDI+.
 	Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
 
+	Gdiplus::FontFamily  fontFamily(L"Segoe UI");
+	Gdiplus::Font        title(&fontFamily, 14, Gdiplus::FontStyleBold, Gdiplus::UnitPixel),
+                         txt(&fontFamily, 12, Gdiplus::FontStyleRegular, Gdiplus::UnitPixel);
+	Gdiplus::PointF      pointF(22.0f, 0.0f);
+	Gdiplus::SolidBrush  solidBrush(Gdiplus::Color(255, 255, 255, 255)), coltxt(Gdiplus::Color::Black);
+
 	HDC hdc = ::GetDC(NULL);
 
 	// Load the image. Any of the following formats are supported: BMP, GIF, JPEG, PNG, TIFF, Exif, WMF, and EMF
@@ -262,15 +268,10 @@ void Colour(std::atomic<bool>& close)
 
 			Gdiplus::Bitmap* clone = res_bg->m_pBitmap->Clone(Gdiplus::Rect(0, 0, 320, 240), PixelFormatDontCare);
 
-
-			Gdiplus::FontFamily  fontFamily(L"Segoe UI");
-			Gdiplus::Font        title(&fontFamily, 14, Gdiplus::FontStyleBold, Gdiplus::UnitPixel),
-								 txt(&fontFamily, 12, Gdiplus::FontStyleRegular, Gdiplus::UnitPixel);
-			Gdiplus::PointF      pointF(22.0f, 0.0f);
-			Gdiplus::SolidBrush  solidBrush(Gdiplus::Color(255, 255, 255, 255)), coltxt(Gdiplus::Color::Black);
 			Gdiplus::Graphics *g = Gdiplus::Graphics::FromImage(clone);
 
 			/*** title ***/
+			pointF = Gdiplus::PointF(22.0f, 0.0f);
 			scene = L"OBS - ";
 			scene.append(getScene());
 			g->DrawString(scene.c_str(), -1, &title, pointF, &solidBrush);
@@ -403,6 +404,10 @@ void Colour(std::atomic<bool>& close)
 			memcpy(byteBitmap + (320 * 4 * 40), vidBuf, VIDEO_BUFFER_SIZE);
 
 			LogiLcdColorSetBackground(byteBitmap);
+
+			DeleteObject(hBitmap);
+			delete g;
+			delete[] clone;
 		}
 		//update screen
 		LogiLcdUpdate();
