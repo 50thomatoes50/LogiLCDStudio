@@ -19,4 +19,11 @@ void Mono(std::atomic<bool>&);
 void Colour(std::atomic<bool>&);
 void Dual(std::atomic<bool>&);
 
+#define do_log(level, format, ...) \
+	blog(level, "[LogiLCD] " format, ##__VA_ARGS__)
+
+#define warn(format, ...)  do_log(LOG_WARNING, format, ##__VA_ARGS__)
+#define info(format, ...)  do_log(LOG_INFO,    format, ##__VA_ARGS__)
+#define dbg(format, ...)  do_log(LOG_DEBUG,    format, ##__VA_ARGS__)
+
 #endif //LCDTHREADS_H

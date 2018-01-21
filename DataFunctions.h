@@ -18,5 +18,6 @@ bool getMute();
 void toggleMute();
 bool getDeaf();
 void toggleDeaf();
+float getCpuUsage();
 
 #endif

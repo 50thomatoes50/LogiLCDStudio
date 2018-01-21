@@ -51,6 +51,7 @@ void Colour(std::atomic<bool>& close)
 	bool downlast = false;
 	bool oklast = false;
 	bool cancellast = false;
+	bool menulast = false;
 	bool ResImgFailed = true;
 	std::wstring steamStatus;
 
@@ -82,6 +83,7 @@ void Colour(std::atomic<bool>& close)
 	std::time_t tnow;
 	std::stringstream currentdate;
 	char stmp[256];
+	video_t *vid = nullptr;
 
 	//stream info
 	obs_output_t* output;
@@ -204,17 +206,6 @@ void Colour(std::atomic<bool>& close)
 
 	Sleep(50);
 
-	video_t *vid = obs_get_video();
-	video_output_get_width(vid);
-	video_output_get_height(vid);
-	video_scale_info vinfo;
-	vinfo.format = VIDEO_FORMAT_BGRA;
-	vinfo.colorspace = VIDEO_CS_DEFAULT;
-	vinfo.range = VIDEO_RANGE_DEFAULT;
-	vinfo.height = 180/*LOGI_LCD_COLOR_HEIGHT*/;
-	vinfo.width = LOGI_LCD_COLOR_WIDTH;
-	video_output_connect(vid, &vinfo, videoDataCallback, NULL);//callback with frame
-
 	while (!close)
 	{
 		//mute and deafen buttons
@@ -264,6 +255,25 @@ void Colour(std::atomic<bool>& close)
 		oklast = LogiLcdIsButtonPressed(LOGI_LCD_COLOR_BUTTON_OK);
 		cancellast = LogiLcdIsButtonPressed(LOGI_LCD_COLOR_BUTTON_CANCEL);
 
+		if(vid == nullptr && (obs_frontend_streaming_active() || obs_frontend_recording_active()) ) {
+			vid = obs_get_video();
+			video_scale_info vinfo;
+			vinfo.format = VIDEO_FORMAT_BGRA;
+			vinfo.colorspace = VIDEO_CS_DEFAULT;
+			vinfo.range = VIDEO_RANGE_DEFAULT;
+			vinfo.height = 180/*LOGI_LCD_COLOR_HEIGHT*/;
+			vinfo.width = LOGI_LCD_COLOR_WIDTH;
+			video_output_connect(vid, &vinfo, videoDataCallback, NULL);//callback with frame
+		}
+		else {
+			if (vid != nullptr && ((!obs_frontend_streaming_active() && !obs_frontend_recording_active()) ) ){
+				video_output_disconnect(vid, videoDataCallback, NULL);
+				vid = nullptr;
+				memset(vidBuf, 0, VIDEO_BUFFER_SIZE);
+			}
+		}
+		menulast = LogiLcdIsButtonPressed(LOGI_LCD_COLOR_BUTTON_MENU);
+
 		if (!ResImgFailed) {
 
 			Gdiplus::Bitmap* clone = res_bg->m_pBitmap->Clone(Gdiplus::Rect(0, 0, 320, 240), PixelFormatDontCare);
@@ -311,6 +321,7 @@ void Colour(std::atomic<bool>& close)
 			//FPS - bitrate
 			if (obs_frontend_streaming_active() || obs_frontend_recording_active()) {
 				getFPS(fps, lastframes, fpslastime);
+				//dbg("FPS %3d lastframe %6d fpstime %15d", fps, lastframes, fpslastime);
 				getbps(bitrate, lastbytes, bpslastime);
 				sprintf(stmp, "%2dFPS - %6.0fkb/s", fps, bitrate);
 			}
@@ -379,6 +390,7 @@ void Colour(std::atomic<bool>& close)
 				tstartimeRec = 0; 
 				currentdate << "-:--:--";
 			}
+			currentdate << " CPU:" << std::fixed << std::setprecision(1) << getCpuUsage()*100 <<"%";
 
 			sprintf(stmp, "%s", currentdate.str().c_str());
 			pointF = Gdiplus::PointF(2.0f, 222.0f);

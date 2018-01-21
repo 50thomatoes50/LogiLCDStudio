@@ -3,6 +3,16 @@ A Docile Sloth 2017 (adocilesloth@gmail.com)
 *******************************************/
 #include "DataFunctions.h"
 #include <Windows.h>
+#include <thread>
+
+union timeKernel
+{
+	FILETIME ft;
+	__int64 i64;
+};
+__int64 last_kernelProcTime, last_UserProcTime;
+__int64 last_idleGenTime, last_kernelGenTime, last_userGenTime;
+float last_pUsage = 0.0f;
 
 std::wstring s2ws(const std::string& str)
 {
@@ -224,4 +234,43 @@ void toggleDeaf()
 		obs_source_release(sceneUsed);
 	}
 	return;
+}
+
+float getCpuUsage()
+{
+	timeKernel idleGenTime, kernelGenTime, userGenTime;
+	BOOL res = GetSystemTimes(&idleGenTime.ft, &kernelGenTime.ft, &userGenTime.ft);
+
+	timeKernel creationTime, exitTime, kernelProcTime, userProcTime;
+	GetProcessTimes(GetCurrentProcess(), &creationTime.ft, &exitTime.ft, &kernelProcTime.ft, &userProcTime.ft);
+
+	__int64 idle = idleGenTime.i64 - last_idleGenTime;
+	__int64 sys = kernelGenTime.i64 - last_kernelGenTime;
+	__int64 usr = userGenTime.i64 - last_userGenTime;
+	__int64 usrp = userProcTime.i64 - last_UserProcTime;
+	__int64 sysp = kernelProcTime.i64 - last_kernelProcTime;
+
+	unsigned concurentThreadsSupported = std::thread::hardware_concurrency();
+	unsigned int numCPU = 0;
+	if (concurentThreadsSupported == 0) { //Win32 API fallback
+		SYSTEM_INFO sysinfo;
+		GetSystemInfo(&sysinfo);
+		numCPU = sysinfo.dwNumberOfProcessors;
+	}
+	else
+		numCPU = concurentThreadsSupported;
+
+	if (usrp == 0 || ((sys+usr+idle) < (10000000 * numCPU * 2)) ) {
+		return last_pUsage;
+	}
+	last_UserProcTime = userProcTime.i64;
+	last_userGenTime = userGenTime.i64;
+	last_kernelProcTime = kernelProcTime.i64;
+	last_kernelGenTime = kernelGenTime.i64;
+	last_idleGenTime = idleGenTime.i64;
+
+	//float pUsage = (usrp + sysp) / (float)(usr-usrp+sys-sysp+idle);
+	float pUsage = (usrp + sysp) / (float)(usr + sys);
+	last_pUsage = pUsage;
+	return pUsage;
 }
